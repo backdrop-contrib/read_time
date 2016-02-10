@@ -31,7 +31,7 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     '#description' => t('Calculate the combined read time of these fields.'),
     '#options' => $fields,
     '#multiple' => TRUE,
-    '#default_value' => variable_get('read_time_fields_' . $type->type, array($defaults['fields'])),
+    '#default_value' => variable_get('read_time_fields_' . $type->type, $defaults['fields']),
   );
   $form['read_time']['read_time_wpm'] = array(
     '#type' => 'textfield',
@@ -40,7 +40,7 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     '#size' => 2,
     '#maxlength' => 3,
     '#element_validate' => array('element_validate_integer_positive'),
-    '#default_value' => variable_get('read_time_wpm_' . $type->type, array($defaults['wpm'])),
+    '#default_value' => variable_get('read_time_wpm_' . $type->type, $defaults['wpm']),
   );
   $form['read_time']['read_time_format'] = array(
     '#type' => 'select',
@@ -52,13 +52,13 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id) {
       'min_short' => t('Minutes, short (65 mins)'),
       'min_long' => t('Minutes, long (65 minutes)'),
     ),
-    '#default_value' => variable_get('read_time_format_' . $type->type, array($defaults['format'])),
+    '#default_value' => variable_get('read_time_format_' . $type->type, $defaults['format']),
   );
   $form['read_time']['read_time_display'] = array(
     '#type' => 'textfield',
     '#title' => t('Read time display'),
     '#description' => t("How the read time will be displayed. Use <em>%read_time</em> to output the read time formatted as above."),
-    '#default_value' => variable_get('read_time_display_' . $type->type, array($defaults['display'])),
+    '#default_value' => variable_get('read_time_display_' . $type->type, $defaults['display']),
   );
 }
 
@@ -171,10 +171,10 @@ function read_time_calculate($node) {
   $defaults = read_time_defaults();
 
   // Get read time bundle settings.
-  $fields = variable_get('read_time_fields_' . $node->type, array($defaults['fields']));
-  $wpm = variable_get('read_time_wpm_' . $node->type, array($defaults['wpm']));
-  $format = variable_get('read_time_format_' . $node->type, array($defaults['format']));
-  $display = variable_get('read_time_display_' . $node->type, array($defaults['display']));
+  $fields = variable_get('read_time_fields_' . $node->type, $defaults['fields']);
+  $wpm = variable_get('read_time_wpm_' . $node->type, $defaults['wpm']);
+  $format = variable_get('read_time_format_' . $node->type, $defaults['format']);
+  $display = variable_get('read_time_display_' . $node->type, $defaults['display']);
 
   // Get fields to calculate read time of.
   $field_words = '';
@@ -219,7 +219,7 @@ function read_time_calculate($node) {
  */
 function read_time_defaults() {
   return array(
-    'fields' => 'body',
+    'fields' => array('body'),
     'wpm' => '225',
     'format' => 'hour_short',
     'display' => t('Read time: %read_time'),
