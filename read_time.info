@@ -1,0 +1,4 @@
+name = Read time
+description = "Displays the time it will take to read content on your site."
+core = 7.x
+
