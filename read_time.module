@@ -193,13 +193,15 @@ function read_time_calculate($node) {
   if (in_array($format, array('hour_short', 'hour_long'))) {
     $hours = floor($time / 60);
     $minutes = ceil(fmod($time, 60));
-  } else {
+  }
+  else {
     $minutes = ceil($time);
   }
   if (in_array($format, array('hour_long', 'min_long'))) {
     $hour_suffix = 'hour';
     $min_suffix = 'minute';
-  } else {
+  }
+  else {
     $hour_suffix = 'hr';
     $min_suffix = 'min';
   }
@@ -207,7 +209,8 @@ function read_time_calculate($node) {
   if (!empty($hours)) {
     $hour_format = format_plural($hours, '1 ' . $hour_suffix, '@count ' . $hour_suffix . 's');
     $read_time = format_string('@h, @m', array('@h' => $hour_format, '@m' => $minute_format));
-  } else {
+  }
+  else {
     $read_time = $minute_format;
   }
 
