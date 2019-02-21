@@ -80,6 +80,45 @@ function read_time_field_extra_fields() {
 }
 
 /**
+ * Implements hook_token_info().
+ */
+function read_time_token_info() {
+  $info['tokens']['node']['read-time'] = array(
+    'name' => t('Read time'),
+    'description' => t('Read time'),
+  );
+  $info['tokens']['node']['read-time-words'] = array(
+    'name' => t('Read time: Words'),
+    'description' => t('The number of words to count the read time for'),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function read_time_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  $sanitize = !empty($options['sanitize']);
+  if ($type == 'node' && !empty($data['node'])) {
+    $node = $data['node'];
+
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'read-time':
+          $replacements[$original] = read_time_node_get_read_time($node);
+          break;
+
+        case 'read-time-words':
+          $replacements[$original] = read_time_node_get_word_count($node);
+          break;
+      }
+    }
+  }
+  return $replacements;
+}
+
+/**
  * Implements hook_node_insert().
  */
 function read_time_node_insert($node) {
@@ -118,24 +157,7 @@ function read_time_node_view($node, $view_mode, $langcode) {
   $settings = $display_settings['read_time'];
 
   if ($settings['visible']) {
-    // Get read time from database.
-    $read_time = db_query('SELECT read_time FROM {read_time} WHERE nid = :nid', array(
-      ':nid' => $node->nid,
-    ))->fetchField();
-
-    // Calculate read time if it doesn't exist and save to database.
-    if (empty($read_time)) {
-      $read_time = read_time_calculate($node);
-
-      db_merge('read_time')
-        ->key(array(
-          'nid' => $node->nid,
-        ))
-        ->fields(array(
-          'read_time' => $read_time,
-        ))
-        ->execute();
-    }
+    $read_time = read_time_node_get_read_time($node);
 
     // Display read time with node.
     $node->content['read_time'] = array(
@@ -171,22 +193,12 @@ function read_time_calculate($node) {
   $defaults = read_time_defaults();
 
   // Get read time bundle settings.
-  $fields = variable_get('read_time_fields_' . $node->type, $defaults['fields']);
   $wpm = variable_get('read_time_wpm_' . $node->type, $defaults['wpm']);
   $format = variable_get('read_time_format_' . $node->type, $defaults['format']);
   $display = variable_get('read_time_display_' . $node->type, $defaults['display']);
 
-  // Get fields to calculate read time of.
-  $field_words = '';
-  foreach ($fields as $field) {
-    $field_items = field_get_items('node', $node, $field);
-    foreach ($field_items as $field_item) {
-      $field_words .= strip_tags($field_item['value']);
-    }
-  }
-
   // Calculate read time.
-  $words = str_word_count($field_words);
+  $words = read_time_node_get_word_count($node);
   $time = $words / $wpm;
 
   // Format read time.
@@ -218,6 +230,63 @@ function read_time_calculate($node) {
 }
 
 /**
+ * Fetch the number of words of a node to count.
+ *
+ * @param $node
+ *   The node object.
+ *
+ * @return mixed
+ *   The number of words.
+ */
+function read_time_node_get_word_count($node) {
+  // Get fields to calculate read time of.
+  $defaults = read_time_defaults();
+  $fields = variable_get('read_time_fields_' . $node->type, $defaults['fields']);
+
+  $field_words = '';
+  foreach ($fields as $field) {
+    $field_items = field_get_items('node', $node, $field);
+    foreach ($field_items as $field_item) {
+      $field_words .= strip_tags($field_item['value']);
+    }
+  }
+
+  return str_word_count($field_words);
+}
+
+/**
+ * Fetch the read time for a node. Recalculate if needed.
+ *
+ * @param stdClass $node.
+ *   The node object.
+ *
+ * @return string
+ *   The read Time.
+ */
+function read_time_node_get_read_time($node) {
+  // Get read time from database.
+  $read_time = db_query('SELECT read_time FROM {read_time} WHERE nid = :nid', array(
+    ':nid' => $node->nid,
+  ))->fetchField();
+
+  // Calculate read time if it doesn't exist and save to database.
+  if (empty($read_time)) {
+    $read_time = read_time_calculate($node);
+
+    db_merge('read_time')
+      ->key(array(
+        'nid' => $node->nid,
+      ))
+      ->fields(array(
+        'read_time' => $read_time,
+      ))
+      ->execute();
+  }
+
+  return $read_time;
+}
+
+/**
  * Store default settings.
  */
 function read_time_defaults() {
@@ -228,4 +297,3 @@ function read_time_defaults() {
     'display' => t('Read time: %read_time'),
   );
 }
-
