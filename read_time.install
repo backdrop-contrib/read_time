@@ -32,14 +32,54 @@ function read_time_schema() {
 }
 
 /**
- * Implements hook_uninstall().
+ * Implements hook_uninstall().().
  */
 function read_time_uninstall() {
   foreach (node_type_get_names() as $bundle => $label) {
-    variable_del('read_time_fields_' . $bundle);
-    variable_del('read_time_wpm_' . $bundle);
-    variable_del('read_time_format_' . $bundle);
-    variable_del('read_time_display_' . $bundle);
+    config_clear('read_time.settings', 'read_time_fields_' . $bundle);
+    config_clear('read_time.settings', 'read_time_wpm_' . $bundle);
+    config_clear('read_time.settings', 'read_time_format_' . $bundle);
+    config_clear('read_time.settings', 'read_time_display_' . $bundle);
   }
+}
+
+/**
+ * Migrate read_time variables to config.
+ */
+function read_time_update_1000() {
+  $config = config('read_time.settings');
+  $config->set('read_time_fields_typetype', update_variable_get('read_time_fields_typetype', 'dynamic variable in file /read_time/read_time.module line 34'));
+  $config->set('read_time_wpm_typetype', update_variable_get('read_time_wpm_typetype', 'dynamic variable in file /read_time/read_time.module line 43'));
+  $config->set('read_time_format_typetype', update_variable_get('read_time_format_typetype', 'dynamic variable in file /read_time/read_time.module line 55'));
+  $config->set('read_time_display_typetype', update_variable_get('read_time_display_typetype', 'dynamic variable in file /read_time/read_time.module line 61'));
+  $config->set('read_time_wpm_nodetype', update_variable_get('read_time_wpm_nodetype', 'dynamic variable in file /read_time/read_time.module line 196'));
+  $config->set('read_time_format_nodetype', update_variable_get('read_time_format_nodetype', 'dynamic variable in file /read_time/read_time.module line 197'));
+  $config->set('read_time_display_nodetype', update_variable_get('read_time_display_nodetype', 'dynamic variable in file /read_time/read_time.module line 198'));
+  $config->set('read_time_fields_nodetype', update_variable_get('read_time_fields_nodetype', 'dynamic variable in file /read_time/read_time.module line 244'));
+  $config->save();
+
+  update_variable_del('read_time_fields_typetype');
+  update_variable_del('read_time_wpm_typetype');
+  update_variable_del('read_time_format_typetype');
+  update_variable_del('read_time_display_typetype');
+  update_variable_del('read_time_wpm_nodetype');
+  update_variable_del('read_time_format_nodetype');
+  update_variable_del('read_time_display_nodetype');
+  update_variable_del('read_time_fields_nodetype');
+}
+
+/**
+ * Implements hook_install().
+ */
+function read_time_install() {
+  // Dynamically generated variable data was detected.
+  // /read_time/read_time.module line 34
+  // /read_time/read_time.module line 43
+  // /read_time/read_time.module line 55
+  // /read_time/read_time.module line 61
+  // /read_time/read_time.module line 196
+  // /read_time/read_time.module line 197
+  // /read_time/read_time.module line 198
+  // /read_time/read_time.module line 244
 }
 
