@@ -1,6 +1,6 @@
 Read Time
-
 ======================
+
 This module displays the time it will take to read the 
 node content on your site.
 
