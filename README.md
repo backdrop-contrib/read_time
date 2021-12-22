@@ -4,13 +4,6 @@ Read Time
 This module displays the time it will take to read the 
 node content on your site.
 
-Foo project enables you to do bar. <!-- The first paragraph of this file should
-be kept short as it will be used as the project summary on backdropcms.org. Aim
-for about 240 characters (three lines at 80 characters each). Do not include a
-table of contents. -->
-
-
-
 Installation 
 ------------
 
