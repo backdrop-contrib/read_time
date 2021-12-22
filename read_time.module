@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Displays the time it will take to read content on your site.
@@ -7,7 +8,8 @@
 /**
  * Implements hook_config_info().
  */
-function read_time_config_info() {
+function read_time_config_info()
+{
   $prefixes['read_time.settings'] = array(
     'label' => t('Read time settings'),
     'group' => t('Configuration'),
@@ -16,9 +18,11 @@ function read_time_config_info() {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for node_type_form.().
+ * Implements hook_form_FORM_ID_alter() for node_type_form.
+().
  */
-function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id) {
+function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id)
+{
   $config = config('read_time.settings');
   $type = $form['#node_type'];
   $defaults = read_time_defaults();
@@ -72,12 +76,33 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     '#description' => t("How the read time will be displayed. Use <em>%read_time</em> to output the read time formatted as above."),
     '#default_value' => $config->get('read_time_display_' . $type->type),
   );
+  $form['#submit'][] = 'read_time_form_node_type_form_submit';
 }
-
+function read_time_form_node_type_form_submit($form, &$form_state)
+{
+  if (isset($form_state['values']['read_time_fields'])) {
+    config_set('read_time.settings', 'read_time_fields_' . $form_state['values']['type'], (array)
+    $form_state['values']['read_time_fields']);
+  }
+  if (isset($form_state['values']['read_time_wpm'])) {
+    config_set('read_time.settings', 'read_time_wpm_' . $form_state['values']['type'], (string)
+    $form_state['values']['read_time_wpm']);
+  }
+  if (isset($form_state['values']['read_time_format'])) {
+    config_set('read_time.settings', 'read_time_format_' . $form_state['values']['type'], (string)
+    $form_state['values']['read_time_format']);
+  }
+  if (isset($form_state['values']['read_time_display'])) {
+    config_set('read_time.settings', 'read_time_display_' . $form_state['values']['type'], (string)
+    $form_state['values']['read_time_display']);
+  }
+}
 /**
- * Implements hook_field_extra_fields().().
+ * Implements hook_field_extra_fields().
+().
  */
-function read_time_field_extra_fields() {
+function read_time_field_extra_fields()
+{
   foreach (field_info_bundles('node') as $bundle => $bundle_info) {
     $extra['node'][$bundle]['display'] = array(
       'read_time' => array(
@@ -92,9 +117,11 @@ function read_time_field_extra_fields() {
 }
 
 /**
- * Implements hook_token_info().().
+ * Implements hook_token_info().
+().
  */
-function read_time_token_info() {
+function read_time_token_info()
+{
   $info['tokens']['node']['read-time'] = array(
     'name' => t('Read time'),
     'description' => t('Read time'),
@@ -107,9 +134,11 @@ function read_time_token_info() {
 }
 
 /**
- * Implements hook_tokens().().
+ * Implements hook_tokens().
+().
  */
-function read_time_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function read_time_tokens($type, $tokens, array $data = array(), array $options = array())
+{
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
   if ($type == 'node' && !empty($data['node'])) {
@@ -131,39 +160,45 @@ function read_time_tokens($type, $tokens, array $data = array(), array $options 
 }
 
 /**
- * Implements hook_node_insert().().
+ * Implements hook_node_insert().
+().
  */
-function read_time_node_insert($node) {
+function read_time_node_insert($node)
+{
   $read_time = read_time_calculate($node);
 
   db_insert('read_time')
     ->fields(array(
-    'nid' => $node->nid,
-    'read_time' => $read_time,
-  ))
+      'nid' => $node->nid,
+      'read_time' => $read_time,
+    ))
     ->execute();
 }
 
 /**
- * Implements hook_node_update().().
+ * Implements hook_node_update().
+().
  */
-function read_time_node_update($node) {
+function read_time_node_update($node)
+{
   $read_time = read_time_calculate($node);
 
   db_merge('read_time')
     ->key(array(
-    'nid' => $node->nid,
-  ))
+      'nid' => $node->nid,
+    ))
     ->fields(array(
-    'read_time' => $read_time,
-  ))
+      'read_time' => $read_time,
+    ))
     ->execute();
 }
 
 /**
- * Implements hook_node_view().().
+ * Implements hook_node_view().
+().
  */
-function read_time_node_view($node, $view_mode, $langcode) {
+function read_time_node_view($node, $view_mode, $langcode)
+{
   // Get read time field settings.
   $display_settings = field_extra_fields_get_display('node', $node->type, $view_mode);
   $settings = $display_settings['read_time'];
@@ -180,18 +215,22 @@ function read_time_node_view($node, $view_mode, $langcode) {
 }
 
 /**
- * Implements hook_node_delete().().
+ * Implements hook_node_delete().
+().
  */
-function read_time_node_delete($node) {
+function read_time_node_delete($node)
+{
   db_delete('read_time')
     ->condition('nid', $node->nid)
     ->execute();
 }
 
 /**
- * Implements hook_node_type_delete().().
+ * Implements hook_node_type_delete().
+().
  */
-function read_time_node_type_delete($info) {
+function read_time_node_type_delete($info)
+{
   config_clear('read_time.settings', 'read_time_fields_' . $info->type);
   config_clear('read_time.settings', 'read_time_wpm_' . $info->type);
   config_clear('read_time.settings', 'read_time_format_' . $info->type);
@@ -201,7 +240,8 @@ function read_time_node_type_delete($info) {
 /**
  * Calculate read time.
  */
-function read_time_calculate($node) {
+function read_time_calculate($node)
+{
   $config = config('read_time.settings');
   $defaults = read_time_defaults();
 
@@ -218,15 +258,13 @@ function read_time_calculate($node) {
   if (in_array($format, array('hour_short', 'hour_long'))) {
     $hours = floor($time / 60);
     $minutes = ceil(fmod($time, 60));
-  }
-  else {
+  } else {
     $minutes = ceil($time);
   }
   if (in_array($format, array('hour_long', 'min_long'))) {
     $hour_suffix = 'hour';
     $min_suffix = 'minute';
-  }
-  else {
+  } else {
     $hour_suffix = 'hr';
     $min_suffix = 'min';
   }
@@ -234,8 +272,7 @@ function read_time_calculate($node) {
   if (!empty($hours)) {
     $hour_format = format_plural($hours, '1 ' . $hour_suffix, '@count ' . $hour_suffix . 's');
     $read_time = format_string('@h, @m', array('@h' => $hour_format, '@m' => $minute_format));
-  }
-  else {
+  } else {
     $read_time = $minute_format;
   }
 
@@ -251,7 +288,8 @@ function read_time_calculate($node) {
  * @return mixed
  *   The number of words.
  */
-function read_time_node_get_word_count($node) {
+function read_time_node_get_word_count($node)
+{
   // Get fields to calculate read time of.
   $defaults = read_time_defaults();
   $fields = config_get('read_time.settings', 'read_time_fields_' . $node->type);
@@ -276,7 +314,8 @@ function read_time_node_get_word_count($node) {
  * @return string
  *   The read Time.
  */
-function read_time_node_get_read_time($node) {
+function read_time_node_get_read_time($node)
+{
   // Get read time from database.
   $read_time = db_query('SELECT read_time FROM {read_time} WHERE nid = :nid', array(
     ':nid' => $node->nid,
@@ -288,11 +327,11 @@ function read_time_node_get_read_time($node) {
 
     db_merge('read_time')
       ->key(array(
-      'nid' => $node->nid,
-    ))
+        'nid' => $node->nid,
+      ))
       ->fields(array(
-      'read_time' => $read_time,
-    ))
+        'read_time' => $read_time,
+      ))
       ->execute();
   }
 
@@ -302,7 +341,8 @@ function read_time_node_get_read_time($node) {
 /**
  * Store default settings.
  */
-function read_time_defaults() {
+function read_time_defaults()
+{
   return array(
     'fields' => array('body'),
     'wpm' => '225',

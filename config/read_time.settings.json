@@ -1,11 +1,7 @@
 {
     "_config_name": "read_time.settings",
-    "read_time_fields_typetype": "dynamic variable in file /read_time/read_time.module line 34",
-    "read_time_wpm_typetype": "dynamic variable in file /read_time/read_time.module line 43",
-    "read_time_format_typetype": "dynamic variable in file /read_time/read_time.module line 55",
-    "read_time_display_typetype": "dynamic variable in file /read_time/read_time.module line 61",
-    "read_time_wpm_nodetype": "dynamic variable in file /read_time/read_time.module line 196",
-    "read_time_format_nodetype": "dynamic variable in file /read_time/read_time.module line 197",
-    "read_time_display_nodetype": "dynamic variable in file /read_time/read_time.module line 198",
-    "read_time_fields_nodetype": "dynamic variable in file /read_time/read_time.module line 244"
+    "read_time_fields": "",
+    "read_time_wpm": "225",
+    "read_time_format": "hour_short",
+    "read_time_display": ""
 }

@@ -14,7 +14,7 @@ Installation
 Differences from Drupal 7 
 -------------------------
 
-- At the moment it doesn't work.  Only transferred so others could access
+- Should work the same as Drupal 7.
 
 Issues 
 ------
@@ -24,7 +24,7 @@ Bugs and feature requests should be reported in [the Issue Queue](https://github
 Current Maintainers
 -------------------
 
-<!-- - [John Smith](https://github.com/username). -->
+<!-- - [Justin Keiser](https://github.com/keiserjb). -->
 
 <!-- You may also wish to add: -->
 - Seeking additional maintainers.
@@ -32,7 +32,7 @@ Current Maintainers
 Credits <!-- This section is required. -->
 -------
 
-<!-- - Ported to Backdrop CMS by [Betty Boop](https://github.com/username). -->
+- Ported to Backdrop CMS by [Justin Keiser](https://github.com/keiserjb).
 - Originally written for Drupal by [Peter Anderson](https://github.com/BWPanda).
 
 
