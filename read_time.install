@@ -53,10 +53,10 @@ function read_time_uninstall()
 function read_time_update_1000()
 {
   $config = config('read_time.settings');
-  $config->set('read_time_fields_', update_variable_get('read_time_fields_',));
-  $config->set('read_time_wpm_', update_variable_get('read_time_wpm_',));
-  $config->set('read_time_format_', update_variable_get('read_time_format_',));
-  $config->set('read_time_display_', update_variable_get('read_time_display_',));
+  $config->set('read_time_fields_', update_variable_get('read_time_fields_'));
+  $config->set('read_time_wpm_', update_variable_get('read_time_wpm_'));
+  $config->set('read_time_format_', update_variable_get('read_time_format_'));
+  $config->set('read_time_display_', update_variable_get('read_time_display_'));
 
   $config->save();
 
