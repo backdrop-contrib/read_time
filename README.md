@@ -14,7 +14,8 @@ Installation
 Differences from Drupal 7 
 -------------------------
 
-- Should work the same as Drupal 7.
+- A Drupal 9 patch allowing the option to enable or disable Read Time per content type was added.
+    https://www.drupal.org/project/read_time/issues/3053580
 
 Issues 
 ------
