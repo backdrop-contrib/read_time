@@ -6,31 +6,47 @@
  */
 
 /**
- * Implements read_time_schema().
+ * Implements hook_schema().
  */
-function read_time_schema()
-{
-  return array(
-    'read_time' => array(
+function read_time_schema() {
+  return [
+    'read_time' => [
       'description' => 'The calculated read times of nodes.',
-      'fields' => array(
-        'nid' => array(
+      'fields' => [
+        'nid' => [
           'description' => 'The {node}.nid of the node.',
           'type' => 'int',
           'not null' => TRUE,
           'unsigned' => TRUE,
-        ),
-        'read_time' => array(
+        ],
+        'read_time' => [
           'description' => 'The calculated and formatted read time of the node.',
           'type' => 'varchar',
           'not null' => TRUE,
           'default' => '',
           'length' => 255,
-        ),
-      ),
-      'primary key' => array('nid'),
-    ),
-  );
+        ],
+      ],
+      'primary key' => ['nid'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Enable Read Time by default on each content type.
+ */
+function Read_time_install() {
+  foreach (node_type_get_types() as $type) {
+    $config = config('read_time.settings.' . $type->type);
+    $config->set('read_time_enable', false);
+    $config->set('read_time_fields', array('body'));
+    $config->set('read_time_wpm', '225');
+    $config->set('read_time_format', 'hour_short');
+    $config->set('read_time_display', t('Read time: %read_time'));
+    $config->save();
+  }
 }
 
 /**
@@ -39,29 +55,77 @@ function read_time_schema()
  */
 function read_time_uninstall()
 {
-  foreach (node_type_get_names() as $bundle => $label) {
-    config_clear('read_time.settings', 'read_time_fields_' . $bundle);
-    config_clear('read_time.settings', 'read_time_wpm_' . $bundle);
-    config_clear('read_time.settings', 'read_time_format_' . $bundle);
-    config_clear('read_time.settings', 'read_time_display_' . $bundle);
+  foreach (node_type_get_types() as $type) {
+    $config = config('node.type.' . $type->type);
+    $config->clear('read_time_enable');
+    $config->clear('read_time_fields');
+    $config->clear('read_time_wpm');
+    $config->clear('read_time_format');
+    $config->clear('read_time_display');
+
   }
 }
 
 /**
- * Migrate read_time variables to config.
+ * Update config so variables are stored in the node type config.
  */
-function read_time_update_1000()
-{
+function read_time_update_1000() {
+  // Remove initial config for the module and replace with node type config
   $config = config('read_time.settings');
-  $config->set('read_time_fields_', update_variable_get('read_time_fields_'));
-  $config->set('read_time_wpm_', update_variable_get('read_time_wpm_'));
-  $config->set('read_time_format_', update_variable_get('read_time_format_'));
-  $config->set('read_time_display_', update_variable_get('read_time_display_'));
+  if ($config) {
+    foreach (node_type_get_types() as $type) {
+      $setting['read_time_enable'] = $config->get('read_time_enable.' .
+        $type->type);
+      $setting['read_time_fields'] = $config->get('read_time_fields.' .
+        $type->type);
+      $setting['read_time_wpm'] = $config->get('read_time_wpm.' . $type->type);
+      $setting['read_time_format'] = $config->get('read_time_format.' .
+        $type->type);
+      $setting['read_time_display'] = $config->get('read_time_display.' .
+        $type->type);
 
-  $config->save();
-
-  update_variable_del('read_time_fields_');
-  update_variable_del('read_time_wpm_');
-  update_variable_del('read_time_format_');
-  update_variable_del('read_time_display_');
+      config_set('read_time.enable.' . $type->type, 'read_time_enable',
+        0);
+      config_set('read_time.settings.' . $type->type, 'read_time_fields',
+        $setting[array('body')]);
+      config_set('read_time.settings.' . $type->type, 'read_time_wpm',
+        $setting['225']);
+      config_set('read_time.settings.' . $type->type, 'read_time_format',
+        $setting['hour_short']);
+      config_set('read_time.settings.' . $type->type, 'read_time_display',
+        $setting['Read time: %read_time']);
+      $config->delete('read_time.settings');
+    }
+    $config->save();
+  }
 }
+
+/**
+ * Upgrade path from Drupal 7 variables.
+ */
+function read_time_update_1001() {
+  foreach (node_type_get_types() as $type) {
+    $config = config('node.type.' . $type->type);
+    $config->set('read_time_enable', update_variable_get('read_time_enable.' .
+      $type->type, 0));
+    $config->set('read_time_fields', update_variable_get('read_time_fields.'
+      . $type->type,  array('body')));
+    $config->set('read_time_wpm', update_variable_get('read_time_wpm.' .
+      $type->type, '225'));
+    $config->set('read_time_format', update_variable_get('read_time_format.'
+      . $type->type, 'hour_short'));
+    $config->set(
+      'read_time_display',
+      update_variable_get('read_time_display.'. $type->type, t('Read time: %read_time'))
+    );
+
+    $config->save();
+    //Delete variables.
+    update_variable_del('read_time_enable.' . $type->type);
+    update_variable_del('read_time_fields.' . $type->type);
+    update_variable_del('read_time_wpm.' . $type->type);
+    update_variable_del('read_time_format.' . $type->type);
+    update_variable_del('read_time_display.' . $type->type);
+  }
+}
+

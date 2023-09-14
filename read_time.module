@@ -8,8 +8,7 @@
 /**
  * Implements hook_config_info().
  */
-function read_time_config_info()
-{
+function read_time_config_info() {
   $prefixes['read_time.settings'] = array(
     'label' => t('Read time settings'),
     'group' => t('Configuration'),
@@ -18,34 +17,70 @@ function read_time_config_info()
 }
 
 /**
+ * Store default settings.
+ */
+function read_time_defaults() {
+  return array(
+    'fields' => array('body'),
+    'wpm' => '225',
+    'format' => 'hour_short',
+    'display' => t('Read time: %read_time'),
+  );
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for node_type_form.
  */
-function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id)
-{
-  $config = config('read_time.settings');
+function read_time_form_node_type_form_alter(&$form, &$form_state) {
   $type = $form['#node_type'];
+  $config = config('read_time.settings.' . $type->type);
+
 
   // Get text fields in this bundle.
-  $field_instances = field_info_instances('node', $type->type);
+  /*$field_instances = field_info_instances('node', $type->type);
   foreach ($field_instances as $field => $field_instance) {
     $field_info = field_info_field($field);
-    if (in_array($field_info['type'], array('text', 'text_long', 'text_with_summary'))) {
+    if (in_array($field_info['type'], array('text', 'text_long', 'text_with_summary', 'paragraphs'))) {
       $fields[$field] = $field_instance['label'];
     }
-  }
+  }*/
 
   $form['read_time'] = array(
     '#type' => 'fieldset',
     '#title' => t('Read time'),
     '#group' => 'additional_settings',
   );
+
+  // Get text fields in this bundle.
+  $field_instances = field_info_instances('node', $type->type);
+  foreach ($field_instances as $field => $field_instance) {
+    $field_info = field_info_field($field);
+    if (in_array($field_info['type'], array('text', 'text_long', 'text_with_summary', 'paragraphs'))) {
+      $fields[$field] = $field_instance['label'];
+    }
+  }
+
+
+  $form['read_time']['read_time_enable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable'),
+    '#description' => t('Enable Read Time for this Content Type.'),
+    '#options' => t('Enable Read Time for this Content Type'),
+    '#default_value' => $config->get('read_time_enable'),
+  );
+
   $form['read_time']['read_time_fields'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Fields'),
     '#description' => t('Calculate the combined read time of these fields.'),
     '#options' => $fields,
     '#multiple' => true,
-    '#default_value' => $config->get('read_time_fields_' . $type->type),
+    '#default_value' => $config->get('read_time_fields'),
+    '#states' => [
+      'invisible' => [
+        ':input[name="read_time_enable"]' => ['checked' => FALSE],
+      ],
+    ],
   );
   $form['read_time']['read_time_wpm'] = array(
     '#type' => 'textfield',
@@ -54,7 +89,12 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id)
     '#size' => 2,
     '#maxlength' => 3,
     '#element_validate' => array('element_validate_integer_positive'),
-    '#default_value' => $config->get('read_time_wpm_' . $type->type),
+    '#default_value' => $config->get('read_time_wpm'),
+    '#states' => [
+      'invisible' => [
+        ':input[name="read_time_enable"]' => ['checked' => FALSE],
+      ],
+    ],
   );
   $form['read_time']['read_time_format'] = array(
     '#type' => 'select',
@@ -66,33 +106,142 @@ function read_time_form_node_type_form_alter(&$form, &$form_state, $form_id)
       'min_short' => t('Minutes, short (65 mins)'),
       'min_long' => t('Minutes, long (65 minutes)'),
     ),
-    '#default_value' => $config->get('read_time_format_' . $type->type),
+    '#default_value' => $config->get('read_time_format'),
+    '#states' => [
+      'invisible' => [
+        ':input[name="read_time_enable"]' => ['checked' => FALSE],
+      ],
+    ],
   );
   $form['read_time']['read_time_display'] = array(
     '#type' => 'textfield',
     '#title' => t('Read time display'),
     '#description' => t("How the read time will be displayed. Use <em>%read_time</em> to output the read time formatted as above."),
-    '#default_value' => $config->get('read_time_display_' . $type->type),
+    '#default_value' => $config->get('read_time_display'),
+    '#states' => [
+      'invisible' => [
+        ':input[name="read_time_enable"]' => ['checked' => FALSE],
+      ],
+    ],
   );
   $form['#submit'][] = 'read_time_form_node_type_form_submit';
 }
 
-function read_time_form_node_type_form_submit($form, &$form_state)
-{
+function read_time_form_node_type_form_submit($form, &$form_state) {
+  $type = $form['#node_type'];
   $values = $form_state['values'];
-  $config = config('read_time.settings');
-  $config->set('read_time_fields_' . $values['type'], (array) $values['read_time_fields']);
-  $config->set('read_time_wpm_' . $values['type'], (string) $values['read_time_wpm']);
-  $config->set('read_time_format_' . $values['type'], (string) $values['read_time_format']);
-  $config->set('read_time_display_' . $values['type'], (string) $values['read_time_display']);
+  $config = config('read_time.settings.' . $type->type);
+  $config->set('read_time_enable', (bool) $values['read_time_enable']);
+  $config->set('read_time_fields', (array) $values['read_time_fields']);
+  $config->set('read_time_wpm', (string) $values['read_time_wpm']);
+  $config->set('read_time_format', (string) $values['read_time_format']);
+  $config->set('read_time_display', (string) $values['read_time_display']);
   $config->save();
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for paragraphs_admin_bundle_form.
+ */
+function read_time_form_paragraphs_admin_bundle_form_alter(&$form, &$form_state, $form_id) {
+  $type = $form['#paragraphs_bundle'];
+  $bundle = $type->bundle;
+
+  $form['read_time'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Read time'),
+    '#group' => 'additional_settings',
+  );
+
+  _read_time_paragraph_fields_form_alter(
+    $form,
+    $form_state,
+    'paragraphs_item',
+    $bundle
+  );
+  // Get text fields in this bundle.
+  /*$field_instances = field_info_instances('paragraphs_item', $bundle);
+  foreach ($field_instances as $field => $field_instance) {
+    $field_info = field_info_field($field);
+    if (in_array($field_info['type'], array('text', 'text_long', 'text_with_summary', 'paragraphs',))) {
+      $fields[$field] = $field_instance['label'];
+    }
+  }*/
+
+  $form['#submit'][] = '_read_time_form_paragraphs_admin_bundle_form_alter_submit';
+}
+
+/**
+ * Helper; Create form fields to select field to calculate.
+ *
+ * @param array $form
+ *   The form to alter.
+ * @param array $form_state .
+ *   The form state.
+ * @param string $type .
+ *   The entity type.
+ * @param string $bundle .
+ *   The entity bundle.
+ */
+function _read_time_paragraph_fields_form_alter(
+  &$form,
+  &$form_state,
+  $type,
+  $bundle
+) {
+  $fields = array();
+  //$name = $type == 'node' ? $bundle : '_' . $type . '__' . $bundle;
+  //$config = config('read_time.settings.' . $bundle);
+
+  // Get text fields in this bundle.
+  $field_instances = field_info_instances($type, $bundle);
+  foreach ($field_instances as $field => $field_instance) {
+    $field_info = field_info_field($field);
+    if (in_array($field_info['type'], array('text', 'text_long', 'text_with_summary', 'paragraphs',))) {
+      $fields[$field] = $field_instance['label'];
+    }
+  }
+
+
+  $form['read_time']['read_time_fields_paragraphs'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Fields'),
+    '#description' => t('Calculate the combined read time of these fields.'),
+    '#options' => $fields,
+    '#multiple' => true,
+    '#default_value' => config_get('read_time.settings.' . $bundle, 'read_time_fields_paragraphs'),
+  );
+}
+
+/**
+ * Submit handler; For read_time_form_paragraphs_admin_bundle_form_alter().
+ *
+ * @see read_time_form_paragraphs_admin_bundle_form_alter()
+ */
+function _read_time_form_paragraphs_admin_bundle_form_alter_submit($form, $form_state) {
+
+  if (!$form_state['values']['locked']) {
+    $bundle = trim($form_state['values']['bundle']);
+  } else {
+    $bundle = $form['#paragraphs_bundle']->bundle;
+  }
+
+  if (!empty($form_state['values'])) {
+    /*$values = $form_state['values'];
+    $config = config('read_time.settings.' . $bundle);*/
+    config_set(
+      'read_time.settings.' . $bundle,
+      'read_time_fields_paragraphs',
+      $form_state['values']['read_time_fields_paragraphs']
+    );
+    //$config->save();
+  }
+}
+
+
+/**
  * Implements hook_field_extra_fields().
  */
-function read_time_field_extra_fields()
-{
+function read_time_field_extra_fields() {
   foreach (field_info_bundles('node') as $bundle => $bundle_info) {
     $extra['node'][$bundle]['display'] = array(
       'read_time' => array(
@@ -109,8 +258,7 @@ function read_time_field_extra_fields()
 /**
  * Implements hook_token_info().
  */
-function read_time_token_info()
-{
+function read_time_token_info() {
   $info['tokens']['node']['read-time'] = array(
     'name' => t('Read time'),
     'description' => t('Read time'),
@@ -125,8 +273,7 @@ function read_time_token_info()
 /**
  * Implements hook_tokens().
  */
-function read_time_tokens($type, $tokens, array $data = array(), array $options = array())
-{
+function read_time_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
   if ($type == 'node' && !empty($data['node'])) {
@@ -150,8 +297,7 @@ function read_time_tokens($type, $tokens, array $data = array(), array $options 
 /**
  * Implements hook_node_insert().
  */
-function read_time_node_insert($node)
-{
+function read_time_node_insert($node) {
   $read_time = read_time_calculate($node);
 
   db_insert('read_time')
@@ -165,8 +311,7 @@ function read_time_node_insert($node)
 /**
  * Implements hook_node_update().
  */
-function read_time_node_update($node)
-{
+function read_time_node_update($node) {
   $read_time = read_time_calculate($node);
 
   db_merge('read_time')
@@ -182,28 +327,30 @@ function read_time_node_update($node)
 /**
  * Implements hook_node_view().
  */
-function read_time_node_view($node, $view_mode, $langcode)
-{
+function read_time_node_view($node, $view_mode, $langcode) {
   // Get read time field settings.
+  $config = config('read_time.settings.' . $node->type);
   $display_settings = field_extra_fields_get_display('node', $node->type, $view_mode);
   $settings = $display_settings['read_time'];
-
-  if ($settings['visible']) {
+  $enable_read_time = $config->get('read_time_enable');
+  if ($settings['visible'] && $enable_read_time == true) {
     $read_time = read_time_node_get_read_time($node);
+    $zero = strpos($read_time, '0');
+    if ($zero === FALSE) {
 
-    // Display read time with node.
-    $node->content['read_time'] = array(
-      '#markup' => '<span class="read-time">' . $read_time . '</span>',
-      '#weight' => $settings['weight'],
-    );
+      // Display read time with node.
+      $node->content['read_time'] = [
+        '#markup' => '<span class="read-time">' . $read_time . '</span>',
+        '#weight' => $settings['weight'],
+      ];
+    }
   }
 }
 
 /**
  * Implements hook_node_delete().
  */
-function read_time_node_delete($node)
-{
+function read_time_node_delete($node) {
   db_delete('read_time')
     ->condition('nid', $node->nid)
     ->execute();
@@ -212,25 +359,23 @@ function read_time_node_delete($node)
 /**
  * Implements hook_node_type_delete().
  */
-function read_time_node_type_delete($info)
-{
-  config_clear('read_time.settings', 'read_time_fields_' . $info->type);
-  config_clear('read_time.settings', 'read_time_wpm_' . $info->type);
-  config_clear('read_time.settings', 'read_time_format_' . $info->type);
-  config_clear('read_time.settings', 'read_time_display_' . $info->type);
+function read_time_node_type_delete($info) {
+  config_clear('read_time.settings.' . $type->type, 'read_time_fields');
+  config_clear('read_time.settings.' . $type->type, 'read_time_wpm');
+  config_clear('read_time.settings.' . $type->type, 'read_time_format');
+  config_clear('read_time.settings.' . $type->type, 'read_time_display');
 }
 
 /**
  * Calculate read time.
  */
-function read_time_calculate($node)
-{
-  $config = config('read_time.settings');
+function read_time_calculate($node) {
+  $config = config('read_time.settings.' . $node->type);
 
   // Get read time bundle settings.
-  $wpm = $config->get('read_time_wpm_' . $node->type);
-  $format = $config->get('read_time_format_' . $node->type);
-  $display = $config->get('read_time_display_' . $node->type);
+  $wpm = $config->get('read_time_wpm');
+  $format = $config->get('read_time_format');
+  $display = $config->get('read_time_display');
 
   // Calculate read time.
   $words = read_time_node_get_word_count($node);
@@ -270,20 +415,59 @@ function read_time_calculate($node)
  * @return mixed
  *   The number of words.
  */
-function read_time_node_get_word_count($node)
-{
+function read_time_node_get_word_count($node) {
   // Get fields to calculate read time of.
-  $fields = config_get('read_time.settings', 'read_time_fields_' . $node->type);
+  $fields = config_get('read_time.settings.' . $node->type, 'read_time_fields');
 
   $field_words = '';
   foreach ($fields as $field) {
     $field_items = field_get_items('node', $node, $field);
-    foreach ($field_items as $field_item) {
-      $field_words .= strip_tags($field_item['value']);
+    if ($field_items) {
+      foreach ($field_items as $field_item) {
+        if (isset($field_item['revision_id'])) {
+          $field_words .= read_time_paragraphs_item_get_words($field_item['value']);
+        } else {
+          $value = isset($field_item['safe_value']) ? $field_item['safe_value'] : $field_item['value'];
+          $field_words .= strip_tags($value);
+          $field_words .= ' ';
+        }
+      }
     }
   }
 
   return str_word_count($field_words);
+}
+
+/**
+ * Fetch the words of a paragraph item.
+ *
+ * @param int $item_id
+ *   The paragraphs item id.
+ *
+ * @return mixed
+ *   The number of words.
+ */
+function read_time_paragraphs_item_get_words($item_id) {
+  if (!$paragraphs_item = paragraphs_item_load($item_id)) {
+    return '';
+  }
+  $fields = config_get('read_time.settings.' . $paragraphs_item->bundle, 'read_time_fields_paragraphs');
+  $field_words = '';
+  foreach ($fields as $field) {
+    $field_items = field_get_items('paragraphs_item', $paragraphs_item, $field);
+    if ($field_items) {
+      foreach ($field_items as $field_item) {
+        if (isset($field_item['revision_id'])) {
+          $field_words .= read_time_paragraphs_item_get_words($field_item['value']);
+        } else {
+          $value = isset($field_item['safe_value']) ? $field_item['safe_value'] : $field_item['value'];
+          $field_words .= strip_tags($value);
+          $field_words .= ' ';
+        }
+      }
+    }
+  }
+  return $field_words;
 }
 
 /**
@@ -295,8 +479,7 @@ function read_time_node_get_word_count($node)
  * @return string
  *   The read Time.
  */
-function read_time_node_get_read_time($node)
-{
+function read_time_node_get_read_time($node) {
   // Get read time from database.
   $read_time = db_query('SELECT read_time FROM {read_time} WHERE nid = :nid', array(
     ':nid' => $node->nid,
